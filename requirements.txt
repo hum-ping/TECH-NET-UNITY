@@ -4,6 +4,7 @@ psutil>=6.0
 pandas>=2.2
 numpy>=2.0
 requests>=2.32
-# Optional voice input
+# Optional voice input/output
 SpeechRecognition>=3.10
 PyAudio>=0.2.14
+pyttsx3>=2.90
