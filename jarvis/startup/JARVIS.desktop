@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=JARVIS Desktop
+Comment=Launch the JARVIS desktop control panel
+Exec=python3 -m jarvis.desktop
+Terminal=false
+X-GNOME-Autostart-enabled=true
