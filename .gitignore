@@ -1,8 +1,11 @@
 .env
 .venv/
+venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 logs/
 *.log
+.jarvis_memory.json
+.jarvis_state.json
 .DS_Store
