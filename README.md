@@ -8,7 +8,53 @@ The trading engine starts in **paper/simulation mode**. It can scan market data,
 
 No strategy can guarantee profit.
 
-## Planned capabilities
+## JARVIS desktop agent
+
+The repository now includes an always-running local agent with:
+
+- scheduled daily routines with duplicate-run protection
+- safe local notifications
+- interactive console commands
+- local JSON memory for short notes
+- an emergency stop
+- an explicit computer-action boundary and allowlist
+- startup guidance for Windows, macOS, and Linux
+
+Start the continuous agent:
+
+```bash
+python -m jarvis.start
+```
+
+Or use the interactive console from a small launcher of your choice by importing `jarvis.console.run_console`.
+
+### Configuration
+
+Set these optional environment variables in `.env`:
+
+```text
+JARVIS_NAME=JARVIS
+JARVIS_COMPUTER_CONTROL=false
+JARVIS_REQUIRE_CONFIRMATION=true
+JARVIS_DAILY_BRIEF_TIME=08:00
+JARVIS_TIMEZONE=Africa/Nairobi
+```
+
+The default routine sends a morning briefing, midday reminder, and end-of-day review. Work-app launching remains a deliberate extension point until specific apps are added to the allowlist.
+
+### Startup on boot
+
+See `jarvis/startup/README.md`. The repository does **not** silently install an OS service or grant itself computer permissions. Register `python -m jarvis.start` with your operating system after reviewing the allowlist.
+
+### Voice
+
+The current core is intentionally text/console-first. A microphone/STT adapter can be added without changing the permission layer; voice input should produce the same allowlisted commands as typed input.
+
+### Emergency stop
+
+Press `Ctrl+C` to stop the running agent. Sensitive computer actions require explicit confirmation through the permission layer; arbitrary shell commands are not supported.
+
+## Existing capabilities
 
 - Local JARVIS command interface
 - Controlled laptop actions using an allowlist
