@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=JARVIS Agent
+Comment=Start the local JARVIS assistant
+Exec=python3 -m jarvis.start
+Terminal=true
+X-GNOME-Autostart-enabled=true
