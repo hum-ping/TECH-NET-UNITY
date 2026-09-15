@@ -10,23 +10,36 @@ No strategy can guarantee profit.
 
 ## JARVIS desktop agent
 
-The repository now includes an always-running local agent with:
+The repository includes an always-running local agent with:
 
+- desktop control panel (`python -m jarvis.desktop`)
 - scheduled daily routines with duplicate-run protection
 - safe local notifications
 - interactive console commands
 - local JSON memory for short notes
-- an emergency stop
-- an explicit computer-action boundary and allowlist
-- startup guidance for Windows, macOS, and Linux
+- optional microphone/wake-word command mode
+- allowlisted website and application control
+- confirmation prompts for desktop actions
+- emergency stop
+- startup templates for Windows and Linux, plus macOS guidance
 
-Start the continuous agent:
+Start the background agent:
 
 ```bash
 python -m jarvis.start
 ```
 
-Or use the interactive console from a small launcher of your choice by importing `jarvis.console.run_console`.
+Start the desktop control panel:
+
+```bash
+python -m jarvis.desktop
+```
+
+Start optional voice mode:
+
+```bash
+python -m jarvis.voice_loop
+```
 
 ### Configuration
 
@@ -38,21 +51,22 @@ JARVIS_COMPUTER_CONTROL=false
 JARVIS_REQUIRE_CONFIRMATION=true
 JARVIS_DAILY_BRIEF_TIME=08:00
 JARVIS_TIMEZONE=Africa/Nairobi
+JARVIS_WAKE_WORD=jarvis
 ```
 
-The default routine sends a morning briefing, midday reminder, and end-of-day review. Work-app launching remains a deliberate extension point until specific apps are added to the allowlist.
+Computer control is deliberately **off by default**. When enabled, JARVIS can only use explicitly allowlisted applications and website hosts; it does not execute arbitrary shell commands.
 
 ### Startup on boot
 
-See `jarvis/startup/README.md`. The repository does **not** silently install an OS service or grant itself computer permissions. Register `python -m jarvis.start` with your operating system after reviewing the allowlist.
+See `jarvis/startup/README.md`. The repository does **not** silently install an OS service or grant itself computer or microphone permissions. Register the launcher with your operating system after reviewing the allowlist.
 
 ### Voice
 
-The current core is intentionally text/console-first. A microphone/STT adapter can be added without changing the permission layer; voice input should produce the same allowlisted commands as typed input.
+Voice input is an optional adapter using SpeechRecognition/PyAudio. It listens for the wake word and sends recognized commands through the same JARVIS permission boundary used by typed commands.
 
 ### Emergency stop
 
-Press `Ctrl+C` to stop the running agent. Sensitive computer actions require explicit confirmation through the permission layer; arbitrary shell commands are not supported.
+Press `Ctrl+C` in the background or voice process, or use the desktop panel's **EMERGENCY STOP** button. JARVIS does not perform destructive cleanup during shutdown.
 
 ## Existing capabilities
 
@@ -73,7 +87,7 @@ python -m venv .venv
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-python main.py
+python -m jarvis.desktop
 ```
 
 ## DervE connection
