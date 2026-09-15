@@ -18,8 +18,9 @@ class ComputerController:
     }
 
     ALLOWED_APPS = {
-        "notepad": ["notepad.exe"],
-        "calculator": ["calc.exe"],
+        "Windows": {"notepad": ["notepad.exe"], "calculator": ["calc.exe"]},
+        "Darwin": {"calculator": ["open", "-a", "Calculator"]},
+        "Linux": {"calculator": ["gnome-calculator"]},
     }
 
     def __init__(self, gate: PermissionGate | None = None):
@@ -34,15 +35,17 @@ class ComputerController:
         if target.startswith(("https://", "http://")):
             self.gate.check("open_url", confirmed=confirmed)
             parsed = urlparse(target)
-            if parsed.hostname not in self.ALLOWED_URL_HOSTS:
-                raise PermissionError("URL host is not on the JARVIS allowlist")
+            if parsed.scheme != "https" or parsed.hostname not in self.ALLOWED_URL_HOSTS:
+                raise PermissionError("Only HTTPS URLs on the JARVIS allowlist are permitted")
             webbrowser.open(target)
             return f"Opened {target}"
+
         app = target.lower().strip()
-        if app not in self.ALLOWED_APPS:
-            raise PermissionError("Application is not on the JARVIS allowlist")
+        commands = self.ALLOWED_APPS.get(platform.system(), {})
+        if app not in commands:
+            raise PermissionError(f"Application '{app}' is not allowlisted for {platform.system()}")
         self.gate.check("open_app", confirmed=confirmed)
-        subprocess.Popen(self.ALLOWED_APPS[app])
+        subprocess.Popen(commands[app])
         return f"Opened {app}"
 
     def notify(self, message: str):
