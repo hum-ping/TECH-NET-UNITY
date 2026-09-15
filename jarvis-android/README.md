@@ -1,23 +1,19 @@
-# JARVIS Android Assistant
+# JARVIS Android
 
-Android starter project for a voice assistant activated by **Hey JARVIS**.
+Android JARVIS assistant with microphone activation, spoken responses, and a foreground microphone service.
 
-## Current architecture
-- Android Kotlin app
-- Microphone permission
-- Foreground microphone service
-- Text-to-speech confirmation
-- Wake-word service scaffold
+## Build
 
-## Important
-The service is intentionally a scaffold: a production wake word requires an actual on-device wake-word engine. Android also restricts background microphone access, so the app must run as a visible foreground service with the required permissions/notifications.
+The GitHub Actions workflow builds a debug APK automatically when files under `jarvis-android/` change.
 
-## Next implementation
-1. Add an offline wake-word engine and a custom `Hey JARVIS` model.
-2. Detect the wake word continuously in the foreground service.
-3. Stop wake-word capture and run Android `SpeechRecognizer` for the command.
-4. Send the command to an AI backend.
-5. Speak the answer with Android TTS.
-6. Add routines/tasks and safe forex analysis commands.
+Artifact: `JARVIS-debug-apk`
 
-Never put an AI API key directly in the Android APK; use a server-side backend.
+## Voice activation
+
+The current implementation uses Android SpeechRecognizer as a practical wake-word approximation for “Hey JARVIS”. A dedicated offline wake-word engine can be added later for lower-power continuous keyword detection.
+
+## Safety
+
+Trading commands are informational/paper-mode oriented. Do not store API keys or broker credentials in the APK or source repository.
+
+Build verification trigger: 2026-09-15.
