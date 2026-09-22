@@ -1,109 +1,81 @@
-# JARVIS — DervE Trading Assistant
+# JARVIS — local-first AI orchestration layer
 
-A local-first personal assistant designed to run on your laptop and monitor the DervE trading account.
+JARVIS is a modular personal-assistant foundation for local commands, optional AI conversation and voice, task routines, system monitoring, and safety-first market analysis. It is **not** an unrestricted autonomous program: every side effect is constrained by a centralized permission boundary.
 
-## Safety-first status
+> **Security notice:** a credential was included in an earlier request. Treat it as compromised: revoke/rotate it in the provider dashboard. Do not put it in source control, logs, screenshots, or this repository.
 
-The trading engine starts in **paper/simulation mode**. It can scan market data, calculate indicators, generate LONG/SHORT/NO-TRADE signals, backtest strategies, and enforce risk limits. Live order execution is intentionally disabled until broker/API credentials and explicit live-trading controls are configured.
+## Architecture
 
-No strategy can guarantee profit.
+- `jarvis/core.py`: permission levels, structured tool results, tool registry, event bus, and emergency-stop state.
+- `jarvis/config.py`: the single environment configuration boundary; safe defaults disable computer control, voice, and live trading.
+- `jarvis/agent.py`: local agent, routines, observable status, and emergency-stop orchestration.
+- `jarvis/tools.py`, `jarvis/tasks.py`, `jarvis/memory.py`: structured local tools, persisted tasks, and categorized secret-resistant memory.
+- `jarvis/providers.py`, `jarvis/brain.py`: replaceable AI/STT/TTS/notification interfaces and an OpenAI-compatible AI adapter.
+- `trading/`: read-only Deriv scanner, risk checks, paper broker, and a broker protocol. No live adapter is provided.
+- `jarvis-android/`: a client-side voice shell; it must call a secured JARVIS API rather than own credentials or trading authority.
 
-## JARVIS desktop agent
+## Install and run
 
-The repository includes an always-running local agent with:
-
-- desktop control panel (`python -m jarvis.desktop`)
-- scheduled daily routines with duplicate-run protection
-- safe local notifications
-- interactive console commands
-- local JSON memory for short notes
-- optional microphone/wake-word command mode
-- allowlisted website and application control
-- confirmation prompts for desktop actions
-- emergency stop
-- startup templates for Windows and Linux, plus macOS guidance
-
-Start the background agent:
-
-```bash
-python -m jarvis.start
-```
-
-Start the desktop control panel:
-
-```bash
-python -m jarvis.desktop
-```
-
-Start optional voice mode:
-
-```bash
-python -m jarvis.voice_loop
-```
-
-### Configuration
-
-Set these optional environment variables in `.env`:
-
-```text
-JARVIS_NAME=JARVIS
-JARVIS_COMPUTER_CONTROL=false
-JARVIS_REQUIRE_CONFIRMATION=true
-JARVIS_DAILY_BRIEF_TIME=08:00
-JARVIS_TIMEZONE=Africa/Nairobi
-JARVIS_WAKE_WORD=jarvis
-```
-
-Computer control is deliberately **off by default**. When enabled, JARVIS can only use explicitly allowlisted applications and website hosts; it does not execute arbitrary shell commands.
-
-### Startup on boot
-
-See `jarvis/startup/README.md`. The repository does **not** silently install an OS service or grant itself computer or microphone permissions. Register the launcher with your operating system after reviewing the allowlist.
-
-### Voice
-
-Voice input is an optional adapter using SpeechRecognition/PyAudio. It listens for the wake word and sends recognized commands through the same JARVIS permission boundary used by typed commands.
-
-### Emergency stop
-
-Press `Ctrl+C` in the background or voice process, or use the desktop panel's **EMERGENCY STOP** button. JARVIS does not perform destructive cleanup during shutdown.
-
-## Existing capabilities
-
-- Local JARVIS command interface
-- Controlled laptop actions using an allowlist
-- Market scanning and technical indicators
-- Signal generation and trade journaling
-- Backtesting and paper trading
-- Risk limits, position sizing, stop-loss/take-profit rules
-- DervE execution adapter when the required API/integration is available
-- Emergency kill switch
-
-## Quick start
+Requires Python 3.10+ (the code uses modern union type syntax). Create a virtual environment, install dependencies, then create a private `.env`:
 
 ```bash
 python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# macOS/Linux: source .venv/bin/activate
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
 python -m jarvis.desktop
+# or: python -m jarvis.ai_chat
+# or: python -m jarvis.start
 ```
 
-## DervE connection
+`main.py` starts the legacy read-only public market scanner. It requires network connectivity and never sends an order.
 
-Put credentials only in `.env` or your operating system's secret store. Never commit API keys to GitHub.
+## Configuration
 
-The repository currently contains a broker-agnostic execution interface so the exact DervE API details can be added without exposing credentials.
+All variables are documented as empty/placeholders in [`.env.example`](.env.example). The central `Settings.from_environment()` loader accepts legacy `JARVIS_AI_*` and `LIVE_TRADING_ENABLED` variables for compatibility, but new configuration should use `AI_*`, `JARVIS_TRADING_MODE`, and `JARVIS_LIVE_TRADING`.
 
-## Trading rollout
+- **AI:** Set `AI_API_KEY`, `AI_BASE_URL`, and `AI_MODEL` only in your private environment. When no key is configured, local commands keep working and AI chat reports a configuration-free local response.
+- **Voice:** Set `JARVIS_VOICE_ENABLED=true` only after installing microphone dependencies; `JARVIS_WAKE_WORD` defaults to `jarvis`.
+- **Computer control:** defaults to disabled. Enable `JARVIS_COMPUTER_CONTROL=true` only with reviewed `JARVIS_ALLOWED_APPS` and `JARVIS_ALLOWED_HOSTS`. URLs must use HTTPS; arbitrary shell commands are not available.
+- **Trading:** defaults to `paper`, with `JARVIS_LIVE_TRADING=false` and trade confirmation on. The kill switch blocks submissions even when another setting is unsafe.
 
-1. Backtest
-2. Paper trade
-3. Validate risk controls
-4. Connect the broker/API
-5. Keep live execution behind an explicit enable flag and kill switch
+## Security model
 
-## License
+Model and external-content output are untrusted proposals. JARVIS processes actions as:
 
-Private project for the repository owner.
+```text
+intent → structured tool request → schema/input validation → permission check
+→ explicit confirmation when required → tool execution → structured result
+```
+
+`READ_ONLY` and `LOW_RISK` operations are separated from `USER_CONFIRMATION` and `HIGH_RISK` operations. Blocked operations and arbitrary shell execution are never exposed. Memory refuses common credential-labelled content; it is local JSON only and should not be treated as a secret vault.
+
+## Tools, tasks, and routines
+
+Tools expose a name, description, input schema, permission level, and async `execute()` method, returning `ToolResult` rather than uncaught exceptions. Local task data and routine duplicate-run state persist on disk. The scheduler only runs configured local reminders; it never silently launches privileged operations.
+
+## Observability and emergency stop
+
+`JarvisAgent.status()` exposes a UI/CLI-safe status object without secrets. Logs use rotating local files when `jarvis.logging.configure_logging()` is called. Press `Ctrl+C`, use the desktop **EMERGENCY STOP** button, or issue `stop jarvis`: JARVIS stops routines and blocks later action execution until restart. It does not delete data.
+
+## Testing
+
+```bash
+python -m unittest discover -s tests -v
+python -m compileall -q jarvis trading assistant
+```
+
+## Troubleshooting
+
+- **AI unavailable:** verify private environment variables; local commands still work.
+- **Voice unavailable:** install optional PyAudio/SpeechRecognition system prerequisites or use text.
+- **Market provider unavailable:** the scanner reports a connection failure; no order is attempted.
+- **Computer action blocked:** this is expected until control is enabled, the target is allowlisted, and confirmation is given.
+
+## Android and UI integration
+
+The desktop UI is intentionally small. A future UI/API should consume `JarvisAgent.status()`, structured tool results, events, tasks, and trading status. Do not embed provider or broker credentials in Android builds. Authenticate remote endpoints before exposing status, chat, or emergency-stop controls.
+
+## Local API
+
+Start the optional local-only API with `python -m jarvis.api`. It binds to `127.0.0.1:8765` by default and returns JSON for `GET /health`, `GET /status`, `GET/POST /tasks`, `POST /chat`, `POST /command`, and `POST /emergency-stop`. It deliberately has no remote authentication layer, so do **not** expose it beyond loopback without an authenticated reverse proxy or equivalent local security boundary.
