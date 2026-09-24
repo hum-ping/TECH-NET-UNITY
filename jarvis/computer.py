@@ -35,17 +35,20 @@ class ComputerController:
         if target.startswith(("https://", "http://")):
             self.gate.check("open_url", confirmed=confirmed)
             parsed = urlparse(target)
-            if parsed.scheme != "https" or parsed.hostname not in self.ALLOWED_URL_HOSTS:
+            if parsed.scheme != "https" or parsed.hostname not in set(settings.allowed_hosts):
                 raise PermissionError("Only HTTPS URLs on the JARVIS allowlist are permitted")
             webbrowser.open(target)
             return f"Opened {target}"
 
         app = target.lower().strip()
         commands = self.ALLOWED_APPS.get(platform.system(), {})
-        if app not in commands:
+        if app not in set(settings.allowed_apps) or app not in commands:
             raise PermissionError(f"Application '{app}' is not allowlisted for {platform.system()}")
         self.gate.check("open_app", confirmed=confirmed)
-        subprocess.Popen(commands[app])
+        try:
+            subprocess.Popen(commands[app])
+        except OSError as exc:
+            return f"I could not start the allowlisted application: {exc}."
         return f"Opened {app}"
 
     def notify(self, message: str):

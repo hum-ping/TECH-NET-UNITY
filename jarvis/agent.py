@@ -6,6 +6,11 @@ from datetime import datetime
 from pathlib import Path
 from threading import Event
 
+from .core import EmergencyStop, EventBus, ToolRegistry
+from .status import system_status
+from .tasks import TaskStore
+from .tools import CreateTaskTool, ListTasksTool, SystemStatusTool
+
 from .actions import ActionRouter
 from .computer import ComputerController
 from .config import settings
@@ -20,6 +25,13 @@ class JarvisAgent:
         self.router = ActionRouter(self.computer)
         self.state_file = Path(state_file)
         self.stop_event = Event()
+        self.emergency = EmergencyStop()
+        self.events = EventBus()
+        self.tools = ToolRegistry()
+        self.tasks = TaskStore()
+        self.tools.register(SystemStatusTool())
+        self.tools.register(CreateTaskTool(self.tasks))
+        self.tools.register(ListTasksTool(self.tasks))
         self.last_run = self._load_state()
 
     def _load_state(self) -> dict:
@@ -34,6 +46,7 @@ class JarvisAgent:
 
     def emergency_stop(self) -> None:
         self.stop_event.set()
+        self.emergency.engage()
         print("JARVIS emergency stop engaged.")
 
     def run_task(self, task) -> str:
@@ -60,7 +73,13 @@ class JarvisAgent:
         self._save_state()
         return results
 
+    def status(self) -> dict:
+        """UI/CLI-safe observability snapshot without exposing configuration secrets."""
+        return system_status(emergency_stopped=self.emergency.active)
+
     def run_command(self, text: str, confirmed: bool = False) -> str:
+        if self.emergency.active:
+            return "Emergency stop is active; restart JARVIS before executing actions."
         result = self.router.handle(text, confirm=confirmed)
         if result == "STOP_REQUESTED":
             self.emergency_stop()

@@ -17,8 +17,8 @@ class AssistantReply:
 class JarvisAssistant:
     """Natural-language command layer with deterministic, allowlisted execution."""
 
-    def __init__(self):
-        self.agent = JarvisAgent()
+    def __init__(self, agent: JarvisAgent | None = None):
+        self.agent = agent or JarvisAgent()
         self.memory = Memory()
 
     def respond(self, text: str) -> AssistantReply:
