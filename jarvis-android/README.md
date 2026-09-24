@@ -16,4 +16,4 @@ The current implementation uses Android SpeechRecognizer as a practical wake-wor
 
 Trading commands are informational/paper-mode oriented. Do not store API keys or broker credentials in the APK or source repository.
 
-Build verification trigger: 2026-09-15.
+Build verification trigger: 2026-09-24.
